@@ -134,9 +134,9 @@ def update_trucklist(trucklist_file, orders_processed):
 
 # Main function to orchestrate the workflow
 def main():
-    trucklist_file = os.path.abspath('BB Label Generator/TruckList.xlsx')
-    template_folder = os.path.abspath('BB Label Generator/labels')
-    output_folder = os.path.abspath('BB Label Generator/generated_labels')
+    trucklist_file = os.path.abspath('TruckList.xlsx')
+    template_folder = os.path.abspath('labels')
+    output_folder = os.path.abspath('generated_labels')
     
     print(f"Current directory: {os.getcwd()}")
     print(f"Files in trucklist directory: {os.listdir(os.path.dirname(trucklist_file))}")
