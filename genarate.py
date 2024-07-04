@@ -7,26 +7,34 @@ from pptx.util import Inches, Pt
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 import comtypes.client
 
-# Function to extract the necessary information from the trucklist
+# Function to extract necessary information from the trucklist
 def extract_trucklist_info(trucklist_file):
-    df = pd.read_excel(trucklist_file)
-    orders_to_process = df[df['Labels created?'] == 'Yes']
-    return orders_to_process
+    try:
+        # Read the Excel file
+        df = pd.read_excel(trucklist_file)
+        # Filter orders where labels have been created
+        orders_to_process = df[df['Labels created?'] == 'Yes']
+        return orders_to_process
+    except Exception as e:
+        print(f"Error extracting trucklist info: {e}")
+        raise
 
-# Function to generate the barcode
+# Function to generate a barcode
 def generate_barcode(order_number, position):
     barcode_data = f"00{order_number}{position}"
     barcode_url = f"https://barcode.tec-it.com/barcode.ashx?data={barcode_data}&code=Code39"
     try:
+        # Download the barcode image
         response = requests.get(barcode_url, timeout=100)
         response.raise_for_status()
+        # Save the barcode image locally
         with open('barcode.png', 'wb') as f:
             f.write(response.content)
     except requests.RequestException as e:
         print(f"Error fetching barcode: {e}")
         raise
 
-# Function to create the label using the template
+# Function to create a label using a template
 def create_label(order_info, template_folder, output_folder):
     sku = order_info['SKU']
     sku_full = sku
@@ -42,7 +50,7 @@ def create_label(order_info, template_folder, output_folder):
         if file.startswith(f"Labels {sku_full}") and file.endswith(".pptx"):
             template_file = os.path.join(template_subfolder, file)
             break
-    
+
     if template_file is None:
         raise FileNotFoundError(f"Template file not found for SKU: {sku_full} in {template_subfolder}")
 
@@ -114,7 +122,10 @@ def create_label(order_info, template_folder, output_folder):
     ppt_to_pdf(label_filename, pdf_filename)
 
     # Delete the intermediate .pptx file
-    os.remove(label_filename)
+    try:
+        os.remove(label_filename)
+    except Exception as e:
+        print(f"Error deleting intermediate .pptx file: {e}")
 
     return pdf_filename
 
@@ -124,18 +135,26 @@ def ppt_to_pdf(input_file, output_file):
     if not os.path.exists(input_file):
         raise FileNotFoundError(f"Input file not found: {input_file}")
 
-    powerpoint = comtypes.client.CreateObject("PowerPoint.Application")
-    powerpoint.Visible = 1
-    deck = powerpoint.Presentations.Open(input_file, WithWindow=False)
-    deck.SaveAs(output_file, 32)  # 32 is the formatType for ppt to pdf
-    deck.Close()
-    powerpoint.Quit()
+    try:
+        powerpoint = comtypes.client.CreateObject("PowerPoint.Application")
+        powerpoint.Visible = 1
+        deck = powerpoint.Presentations.Open(input_file, WithWindow=False)
+        deck.SaveAs(output_file, 32)  # 32 is the formatType for ppt to pdf
+        deck.Close()
+        powerpoint.Quit()
+    except Exception as e:
+        print(f"Error converting PPT to PDF: {e}")
+        raise
 
 # Function to update the trucklist
 def update_trucklist(trucklist_file, orders_processed):
-    df = pd.read_excel(trucklist_file)
-    df.loc[df['Order number'].isin(orders_processed), 'Labels created?'] = 'No'
-    df.to_excel(trucklist_file, index=False)
+    try:
+        df = pd.read_excel(trucklist_file)
+        df.loc[df['Order number'].isin(orders_processed), 'Labels created?'] = 'No'
+        df.to_excel(trucklist_file, index=False)
+    except Exception as e:
+        print(f"Error updating trucklist: {e}")
+        raise
 
 # Main function to orchestrate the workflow
 def main():
@@ -147,15 +166,26 @@ def main():
     print(f"Files in trucklist directory: {os.listdir(os.path.dirname(trucklist_file))}")
     print(f"Files in template directory: {os.listdir(template_folder)}")
     
-    orders_to_process = extract_trucklist_info(trucklist_file)
+    try:
+        orders_to_process = extract_trucklist_info(trucklist_file)
+    except Exception as e:
+        print(f"Failed to extract trucklist info: {e}")
+        return
+    
     orders_processed = []
     
     for _, order_info in orders_to_process.iterrows():
-        label_filename = create_label(order_info, template_folder, output_folder)
-        print(f"Label created: {label_filename}")
-        orders_processed.append(order_info['Order number'])
-    
-    update_trucklist(trucklist_file, orders_processed)
+        try:
+            label_filename = create_label(order_info, template_folder, output_folder)
+            print(f"Label created: {label_filename}")
+            orders_processed.append(order_info['Order number'])
+        except Exception as e:
+            print(f"Failed to create label for order {order_info['Order number']}: {e}")
+
+    try:
+        update_trucklist(trucklist_file, orders_processed)
+    except Exception as e:
+        print(f"Failed to update trucklist: {e}")
 
 if __name__ == "__main__":
     main()
