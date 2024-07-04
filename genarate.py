@@ -134,7 +134,7 @@ def ppt_to_pdf(input_file, output_file):
 # Function to update the trucklist
 def update_trucklist(trucklist_file, orders_processed):
     df = pd.read_excel(trucklist_file)
-    df.loc[df['Order number'].isin(orders_processed), 'Labels created?'] = 'Yes'
+    df.loc[df['Order number'].isin(orders_processed), 'Labels created?'] = 'No'
     df.to_excel(trucklist_file, index=False)
 
 # Main function to orchestrate the workflow
