@@ -17,9 +17,14 @@ def extract_trucklist_info(trucklist_file):
 def generate_barcode(order_number, position):
     barcode_data = f"00{order_number}{position}"
     barcode_url = f"https://barcode.tec-it.com/barcode.ashx?data={barcode_data}&code=Code39"
-    response = requests.get(barcode_url)
-    with open('barcode.png', 'wb') as f:
-        f.write(response.content)
+    try:
+        response = requests.get(barcode_url, timeout=100)
+        response.raise_for_status()
+        with open('barcode.png', 'wb') as f:
+            f.write(response.content)
+    except requests.RequestException as e:
+        print(f"Error fetching barcode: {e}")
+        raise
 
 # Function to create the label using the template
 def create_label(order_info, template_folder, output_folder):
