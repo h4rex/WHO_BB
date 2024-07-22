@@ -1,0 +1,7 @@
+{
+    "trucklist_file": "TruckList.xlsx",
+    "template_folder": "labels",
+    "output_folder": "generated_labels",
+    "barcode_folder": "barcodes",
+    "font": "fonts\\arialmt.ttf"
+}
